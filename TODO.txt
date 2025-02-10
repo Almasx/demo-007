@@ -1,0 +1,12 @@
+
+[x] basic panel and structer
+[x] bind header to message
+[x] panel 
+  - sticky
+  - scollable indepedent of window
+  - styles
+
+[ ] keep center element active when scrolling
+
+
+
