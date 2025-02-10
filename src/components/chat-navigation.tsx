@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useState, useRef, useMemo } from "react";
+import {
+  useCallback,
+  useState,
+  useRef,
+  useMemo,
+  MouseEventHandler,
+} from "react";
 import { ChatHeader } from "~/types";
 import { Reply } from "lucide-react";
 import { cn } from "~/utils";
@@ -10,6 +16,7 @@ import useMeasure from "react-use-measure";
 
 interface ChatNavigationProps {
   headers: ChatHeader[];
+  onDismiss: MouseEventHandler<HTMLDivElement>;
 }
 
 const flattenHeaders = (headers: ChatHeader[]): ChatHeader[] => {
@@ -21,6 +28,7 @@ const flattenHeaders = (headers: ChatHeader[]): ChatHeader[] => {
 
 export const ChatNavigationPanel: React.FC<ChatNavigationProps> = ({
   headers,
+  onDismiss,
 }) => {
   const [activeHeader, setActiveHeader] = useState<ChatHeader | null>(null);
   const [activeHeaderRef, activeHeaderBounds] = useMeasure();
@@ -54,12 +62,35 @@ export const ChatNavigationPanel: React.FC<ChatNavigationProps> = ({
     const isActive = header.id === activeHeader?.id;
     const isChild = depth > 0;
 
+    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+      handleHeaderClick(header);
+
+      const element = e.currentTarget;
+      const container = containerRef.current;
+
+      if (container) {
+        const elementRect = element.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+
+        const scrollTop =
+          container.scrollTop +
+          (elementRect.top - containerRect.top) -
+          containerRect.height / 2 -
+          elementRect.height / 2;
+
+        container.scrollTo({
+          top: scrollTop,
+        });
+      }
+    };
+
     return (
       <div key={header.id} className="flex flex-col gap-2">
         <button
           ref={isActive ? activeHeaderRef : null}
           data-header-id={header.id}
-          onClick={() => handleHeaderClick(header)}
+          onClick={handleClick}
           className={cn(
             "group flex items-center gap-2.5 h-9 px-3 py-2 relative rounded-xl transition-colors",
             "hover:bg-[#F4F4F4]/50",
@@ -102,7 +133,10 @@ export const ChatNavigationPanel: React.FC<ChatNavigationProps> = ({
   };
 
   return (
-    <div className="w-[375px] relative bg-white">
+    <div
+      className="w-screen h-screen overflow-y-auto relative bg-gradient-to-r from-white via-white to-white/20"
+      onClick={onDismiss}
+    >
       <div
         className="flex flex-col gap-2 p-2 h-screen py-[calc(50vh)] overflow-y-auto overflow-x-hidden"
         ref={containerRef}
