@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useCallback,
-  useState,
-  useRef,
-  useMemo,
-  MouseEventHandler,
-} from "react";
+import { useCallback, useState, useRef, useMemo } from "react";
 import { ChatHeader } from "~/types";
 import { Reply } from "lucide-react";
 import { cn } from "~/utils";
@@ -16,7 +10,6 @@ import useMeasure from "react-use-measure";
 
 interface ChatNavigationProps {
   headers: ChatHeader[];
-  onDismiss: MouseEventHandler<HTMLDivElement>;
 }
 
 const flattenHeaders = (headers: ChatHeader[]): ChatHeader[] => {
@@ -28,7 +21,6 @@ const flattenHeaders = (headers: ChatHeader[]): ChatHeader[] => {
 
 export const ChatNavigationPanel: React.FC<ChatNavigationProps> = ({
   headers,
-  onDismiss,
 }) => {
   const [activeHeader, setActiveHeader] = useState<ChatHeader | null>(null);
   const [activeHeaderRef, activeHeaderBounds] = useMeasure();
@@ -133,10 +125,7 @@ export const ChatNavigationPanel: React.FC<ChatNavigationProps> = ({
   };
 
   return (
-    <div
-      className="w-screen h-screen overflow-y-auto relative bg-gradient-to-r from-white via-white to-white/20"
-      onClick={onDismiss}
-    >
+    <div className="w-screen h-screen overflow-y-auto relative bg-gradient-to-r from-white via-white to-white/20">
       <div
         className="flex flex-col gap-2 p-2 h-screen py-[calc(50vh)] overflow-y-auto overflow-x-hidden"
         ref={containerRef}
