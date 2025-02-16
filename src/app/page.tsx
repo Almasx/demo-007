@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { useRef } from "react";
@@ -7,11 +8,12 @@ import { ChatMessages } from "~/components/chat-messages";
 import { generateHeadersFromMessages } from "~/utils/generate-headers";
 import { usePanelAnimation } from "~/hooks/usePanelAnimation";
 import { mockMessages } from "~/const";
+import { cn } from "~/utils";
 
 export default function Home() {
   const headers = generateHeadersFromMessages(mockMessages);
   const mainRef = useRef<HTMLDivElement>(null);
-  const { chatProps, panelProps } = usePanelAnimation();
+  const { chatProps, panelProps, state } = usePanelAnimation();
 
   return (
     <div className="min-h-screen bg-white relative">
@@ -30,7 +32,11 @@ export default function Home() {
           {...chatProps}
           {...DRAG_CONFIG}
           ref={mainRef}
-          className="shrink-0 cursor-grab overflow-x-hidden active:cursor-grabbing"
+          className={cn(
+            "shrink-0 cursor-grab active:cursor-grabbing px-[13px]",
+            state === "panel" && "pointer-events-none"
+          )}
+          aria-hidden={state === "panel"}
           drag="x"
           dragConstraints={{ left: 0, right: window.innerWidth * 0.5 }}
         >

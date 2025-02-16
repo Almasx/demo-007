@@ -2,11 +2,6 @@ import { Message } from "~/types";
 
 export const mockMessages: Message[] = [
   {
-    role: "assistant",
-    content:
-      "Hello there! I'm ChatGPT, a large language model capable of generating rich text responses. How can I assist you today?\n\nFeel free to ask me anything!",
-  },
-  {
     role: "user",
     content: "Hi ChatGPT, can you explain how AI works in simple terms?",
   },

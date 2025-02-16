@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useState, useRef, useMemo } from "react";
+import { useCallback, useState, useRef, useMemo, useEffect } from "react";
 import { ChatHeader } from "~/types";
 import { Reply } from "lucide-react";
 import { cn } from "~/utils";
 import { useActiveHeader } from "~/hooks/useActiveHeader";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import useMeasure from "react-use-measure";
+import { playHapticFeedback } from "~/utils/haptic";
 
 interface ChatNavigationProps {
   headers: ChatHeader[];
@@ -28,11 +29,12 @@ export const ChatNavigationPanel: React.FC<ChatNavigationProps> = ({
 
   const flattenedHeaders = useMemo(() => flattenHeaders(headers), [headers]);
 
+  // Define a helper function to simulate haptic feedback with sound and vibration
+
   useActiveHeader({
-    containerRef,
     onActiveHeaderChange: (headerId) => {
-      const header = flattenedHeaders.find((h) => h.id === headerId);
-      if (header) {
+      if (headerId) {
+        const header = flattenedHeaders.find((h) => h.id === headerId)!;
         setActiveHeader(header);
         handleHeaderClick(header);
       } else {
@@ -40,6 +42,13 @@ export const ChatNavigationPanel: React.FC<ChatNavigationProps> = ({
       }
     },
   });
+
+  // Play haptic feedback whenever the active header changes
+  useEffect(() => {
+    if (activeHeader) {
+      playHapticFeedback();
+    }
+  }, [activeHeader]);
 
   const handleHeaderClick = useCallback((header: ChatHeader) => {
     setActiveHeader(header);
@@ -68,11 +77,11 @@ export const ChatNavigationPanel: React.FC<ChatNavigationProps> = ({
         const scrollTop =
           container.scrollTop +
           (elementRect.top - containerRect.top) -
-          containerRect.height / 2 -
-          elementRect.height / 2;
+          containerRect.height / 2;
 
         container.scrollTo({
           top: scrollTop,
+          behavior: "smooth",
         });
       }
     };
@@ -84,7 +93,7 @@ export const ChatNavigationPanel: React.FC<ChatNavigationProps> = ({
           data-header-id={header.id}
           onClick={handleClick}
           className={cn(
-            "group flex items-center gap-2.5 h-9 px-3 py-2 relative rounded-xl transition-colors",
+            "group w-fit flex items-center gap-2.5 !h-16 text-lg px-3 py-2 relative rounded-2xl transition-colors",
             "hover:bg-[#F4F4F4]/50",
             isChild && "ml-4"
           )}
@@ -94,30 +103,9 @@ export const ChatNavigationPanel: React.FC<ChatNavigationProps> = ({
               <Reply className="w-4 h-4 rotate-180" />
             </span>
           )}
-          <span
-            className={cn(
-              "text-[#5D5D5D] leading-5 truncate",
-              isActive && "font-medium"
-            )}
-          >
+          <span className={cn("text-[#5D5D5D] leading-5 ")}>
             {header.title}
           </span>
-          {isActive && (
-            <motion.div
-              transition={{ duration: 0.1, type: "spring", bounce: 0 }}
-              className="rounded-xl inset-0 bg-[#F4F4F4] gap-2.5 absolute px-3 py-2 h-full flex items-center"
-              layoutId="active"
-            >
-              {isChild && (
-                <span className="text-[#5D5D5D]">
-                  <Reply className="w-4 h-4 rotate-180" />
-                </span>
-              )}
-              <motion.span className="text-[#5D5D5D] leading-5 truncate">
-                {header.title}
-              </motion.span>
-            </motion.div>
-          )}
         </button>
         {header.children?.map((child) => renderHeader(child, depth + 1))}
       </div>
@@ -125,17 +113,31 @@ export const ChatNavigationPanel: React.FC<ChatNavigationProps> = ({
   };
 
   return (
-    <div className="w-screen h-screen overflow-y-auto relative bg-gradient-to-r from-white via-white to-white/20">
+    <div
+      className="w-screen h-screen relative will-change-transform"
+      style={{
+        background:
+          "linear-gradient(to right, rgba(255, 255, 255, 1) 50%, rgba(255, 255, 255, 0.2))",
+      }}
+    >
       <div
-        className="flex flex-col gap-2 p-2 h-screen py-[calc(50vh)] overflow-y-auto overflow-x-hidden"
+        className="absolute inset-0"
+        style={{
+          background: "rgba(255, 255, 255, 0.2)",
+          backdropFilter: "blur(4px)",
+          maskImage: "linear-gradient(to right, black 80%, transparent 100%)",
+        }}
+      />
+      <div
+        className="flex flex-col gap-2 p-2 h-screen pt-[50vh] pb-[calc(50vh-64px)] no-scrollbar overflow-y-auto overflow-x-hidden transform-gpu"
         ref={containerRef}
       >
         {headers.map((header) => renderHeader(header))}
       </div>
-      {/* <ActiveHeader
+      <ActiveHeader
         activeHeader={activeHeader}
         activeHeaderBounds={activeHeaderBounds}
-      /> */}
+      />
     </div>
   );
 };
@@ -149,23 +151,87 @@ const ActiveHeader = ({
   activeHeader,
   activeHeaderBounds,
 }: ActiveHeaderProps) => {
+  // const [scrolling, setScrolling] = useState(false);
+
+  // useEffect(() => {
+  //   const handleTouchStart = () => {
+  //     setScrolling(true);
+  //   };
+
+  //   const handleTouchEnd = () => {
+  //     setScrolling(false);
+  //   };
+
+  //   window.addEventListener("touchstart", handleTouchStart, { passive: true });
+  //   window.addEventListener("touchend", handleTouchEnd, { passive: true });
+
+  //   return () => {
+  //     window.removeEventListener("touchstart", handleTouchStart);
+  //     window.removeEventListener("touchend", handleTouchEnd);
+  //   };
+  // }, []);
+
+  const text = useMemo(() => {
+    switch (true) {
+      case activeHeader?.level && activeHeader.level > 1:
+        return (
+          <>
+            <span className="text-[#5D5D5D]">
+              <Reply className="w-4 h-4 rotate-180" />
+            </span>
+            <span className="text-[#5D5D5D] leading-5 whitespace-nowrap w-full">
+              {activeHeader?.title}
+            </span>
+          </>
+        );
+      case !!activeHeader?.title:
+        return (
+          <span className="text-[#5D5D5D] leading-5 whitespace-nowrap w-full">
+            {activeHeader?.title}
+          </span>
+        );
+      default:
+        return null;
+    }
+  }, [activeHeader]);
+
+  console.log(activeHeader?.level);
+
+  const width = activeHeader ? activeHeaderBounds.width : 200;
+  const left =
+    activeHeader && activeHeaderBounds.left
+      ? activeHeaderBounds.left
+      : window.innerWidth / 2 - 100;
+
+  console.log();
+
   return (
     <motion.div
-      transition={{ duration: 0.1, type: "spring", bounce: 0 }}
-      animate={{
-        width: activeHeader ? activeHeaderBounds.width : 0,
-        x: activeHeader ? activeHeaderBounds.left : 0,
+      transition={{
+        duration: 0.1,
+        type: "spring",
+        bounce: 0,
       }}
-      className="rounded-xl absolute left-2 h-9 top-1/2 -translate-y-1/2 bg-[#F4F4F4] gap-2.5  px-3 py-2 flex items-center"
+      animate={{
+        width,
+        x: left,
+        opacity: activeHeaderBounds.left < 1 ? 0 : 1,
+      }}
+      className="rounded-2xl absolute overflow-hidden h-16 left-2 text-lg top-1/2 bg-[#f4f4f4] -translate-y-1/2 will-change-transform transform-gpu"
     >
-      {activeHeader?.level && activeHeader.level > 0 && (
-        <span className="text-[#5D5D5D]">
-          <Reply className="w-4 h-4 rotate-180" />
-        </span>
-      )}
-      <span className="text-[#5D5D5D] leading-5 truncate w-full">
-        {activeHeader?.title}
-      </span>
+      <AnimatePresence mode="popLayout">
+        <motion.div
+          className="gap-2.5 px-3 py-2 flex items-center h-16"
+          key={activeHeader?.id}
+          initial={{ opacity: 0, scale: 0.8, filter: "blur(10px)" }}
+          animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+          exit={{ opacity: 0, scale: 0.8, filter: "blur(10px)" }}
+          transition={{ duration: 0.05 }}
+        >
+          {text}
+        </motion.div>
+      </AnimatePresence>
+      <div className="absolute right-0 top-0 w-10 h-full bg-gradient-to-r from-transparent to-[#f4f4f4]" />
     </motion.div>
   );
 };

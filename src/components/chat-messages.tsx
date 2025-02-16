@@ -7,7 +7,7 @@ interface ChatMessagesProps {
 
 export const ChatMessages = ({ messages }: ChatMessagesProps) => {
   return (
-    <div className="flex flex-col px-[13px] py-4 space-y-[37px] w-[375px]">
+    <div className="flex flex-col py-4 space-y-[37px]">
       {messages.map((message, index) => (
         <article
           key={index}

@@ -1,27 +1,21 @@
 import { useEffect, useRef } from "react";
 
 interface useActiveHeaderProps {
-  containerRef: React.RefObject<HTMLDivElement | null>;
   onActiveHeaderChange: (headerId: string) => void;
 }
 
 export const useActiveHeader = ({
-  containerRef,
   onActiveHeaderChange,
 }: useActiveHeaderProps) => {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const entriesRef = useRef<Map<string, IntersectionObserverEntry>>(new Map());
 
+  const rootMargin = `${Math.round(-(window.innerHeight / 2) - 32)}px`;
+
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const rootMargin = `${Math.round(-(container?.clientHeight / 2) - 36)}px`;
-
     const options = {
-      root: container,
       rootMargin: `${rootMargin} 0px`,
-      threshold: Array.from({ length: 100 }, (_, i) => i / 100),
+      threshold: [0, 1.0],
     } as IntersectionObserverInit;
 
     const updateActiveHeader = () => {
@@ -48,7 +42,6 @@ export const useActiveHeader = ({
         const button = entry.target as HTMLButtonElement;
         const id = button.dataset.headerId;
         if (!id) return;
-
         if (entry.isIntersecting) {
           entriesRef.current.set(id, entry);
         } else {
@@ -63,7 +56,7 @@ export const useActiveHeader = ({
     observerRef.current = new IntersectionObserver(callback, options);
 
     // Observe all header buttons in the navigation
-    const headerButtons = container.querySelectorAll("button[data-header-id]");
+    const headerButtons = document.querySelectorAll("button[data-header-id]");
     headerButtons.forEach((button) => {
       observerRef.current?.observe(button);
     });
@@ -74,5 +67,5 @@ export const useActiveHeader = ({
       }
       entriesRef.current.clear();
     };
-  }, [containerRef]);
+  }, []);
 };

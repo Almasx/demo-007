@@ -7,6 +7,6 @@
   - styles
 
 [ ] keep center element active when scrolling
-
+[ ] fix mobile 
 
 

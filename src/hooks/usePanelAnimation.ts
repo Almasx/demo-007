@@ -5,45 +5,53 @@ import {
   PanInfo,
 } from "framer-motion";
 import { ANIMATION, SCREEN_BREAKPOINTS } from "~/app/page";
-
+import { useCallback, useState } from "react";
 export const usePanelAnimation = () => {
+  const [state, setState] = useState<"chat" | "panel">("chat");
+
   const chatControls = useAnimation();
   const panelControls = useAnimation();
+
   const chatX = useMotionValue(0);
   const panelX = useMotionValue(-window.innerWidth);
+
   const chatOpacity = useTransform(
     chatX,
     [0, window.innerWidth * 0.5],
     [ANIMATION.OPACITY.INITIAL, ANIMATION.OPACITY.FINAL]
   );
 
-  const snapTo = async (targetChatX: number) => {
-    const targetPanelX = targetChatX === 0 ? -window.innerWidth : 0;
+  const snapTo = useCallback(
+    async (targetChatX: number) => {
+      const targetPanelX = targetChatX === 0 ? -window.innerWidth : 0;
 
-    await Promise.all([
-      chatControls.start({
-        x: targetChatX,
-        transition: ANIMATION.TRANSITION,
-      }),
-      panelControls.start({
-        x: targetPanelX,
-        transition: ANIMATION.TRANSITION,
-      }),
-    ]);
+      await Promise.all([
+        chatControls.start({
+          x: targetChatX,
+          transition: ANIMATION.TRANSITION,
+        }),
+        panelControls.start({
+          x: targetPanelX,
+          transition: ANIMATION.TRANSITION,
+        }),
+      ]);
 
-    chatX.set(targetChatX);
-    panelX.set(targetPanelX);
-  };
+      chatX.set(targetChatX);
+      panelX.set(targetPanelX);
+      setState(targetChatX === 0 ? "chat" : "panel");
+    },
+    [chatControls, panelControls, chatX, panelX, setState]
+  );
 
-  const handleDragStart = () => {
+  const handleDragStart = useCallback(() => {
     chatControls.stop();
     panelControls.stop();
-  };
+  }, [chatControls, panelControls]);
 
-  const handleDrag = (source: "panel" | "chat", _: unknown, info: PanInfo) => {
-    const screenWidth = window.innerWidth;
+  const handlePanelDrag = useCallback(
+    (info: PanInfo) => {
+      const screenWidth = window.innerWidth;
 
-    if (source === "panel") {
       const newPanelX = panelX.get() + info.delta.x;
       const newChatX = (newPanelX + screenWidth) * 0.5;
 
@@ -52,7 +60,13 @@ export const usePanelAnimation = () => {
         chatX.set(newChatX);
         chatControls.set({ x: newChatX });
       }
-    } else {
+    },
+    [chatControls, panelX, chatX]
+  );
+
+  const handleChatDrag = useCallback(
+    (info: PanInfo) => {
+      const screenWidth = window.innerWidth;
       const newChatX = chatX.get() + info.delta.x;
       const newPanelX = newChatX * 2 - screenWidth;
 
@@ -61,17 +75,13 @@ export const usePanelAnimation = () => {
         panelX.set(newPanelX);
         panelControls.set({ x: newPanelX });
       }
-    }
-  };
+    },
+    [chatX, panelX, panelControls]
+  );
 
-  const handleDragEnd = (
-    source: "panel" | "chat",
-    _: unknown,
-    info: PanInfo
-  ) => {
-    const screenWidth = window.innerWidth;
-
-    if (source === "panel") {
+  const handlePanelDragEnd = useCallback(
+    (info: PanInfo) => {
+      const screenWidth = window.innerWidth;
       const normalizedX = (panelX.get() + screenWidth) / screenWidth;
       const velocity = -info.velocity.x;
 
@@ -83,7 +93,13 @@ export const usePanelAnimation = () => {
       } else {
         snapTo(0);
       }
-    } else {
+    },
+    [panelX, snapTo]
+  );
+
+  const handleChatDragEnd = useCallback(
+    (info: PanInfo) => {
+      const screenWidth = window.innerWidth;
       const normalizedX = chatX.get() / screenWidth;
       const velocity = info.velocity.x;
 
@@ -96,27 +112,29 @@ export const usePanelAnimation = () => {
       } else {
         snapTo(0);
       }
-    }
-  };
+    },
+    [chatX, snapTo]
+  );
 
   const chatProps = {
     animate: chatControls,
     style: { x: chatX, opacity: chatOpacity },
     onDragStart: handleDragStart,
-    onDrag: (_: unknown, info: PanInfo) => handleDrag("chat", _, info),
-    onDragEnd: (_: unknown, info: PanInfo) => handleDragEnd("chat", _, info),
+    onDrag: (_: unknown, info: PanInfo) => handleChatDrag(info),
+    onDragEnd: (_: unknown, info: PanInfo) => handleChatDragEnd(info),
   };
 
   const panelProps = {
     animate: panelControls,
     style: { x: panelX },
     onDragStart: handleDragStart,
-    onDrag: (_: unknown, info: PanInfo) => handleDrag("panel", _, info),
-    onDragEnd: (_: unknown, info: PanInfo) => handleDragEnd("panel", _, info),
+    onDrag: (_: unknown, info: PanInfo) => handlePanelDrag(info),
+    onDragEnd: (_: unknown, info: PanInfo) => handlePanelDragEnd(info),
   };
 
   return {
     chatProps,
     panelProps,
+    state,
   };
 };

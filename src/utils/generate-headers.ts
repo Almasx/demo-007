@@ -45,7 +45,7 @@ export function generateHeadersFromMessages(messages: Message[]): ChatHeader[] {
   return headers;
 }
 
-const MAX_TITLE_LENGTH = 50;
+const MAX_TITLE_LENGTH = 30;
 
 // Helper function to extract a title from message content
 function getHeaderTitle(content: string, prefix: string): string {
@@ -57,14 +57,7 @@ function getHeaderTitle(content: string, prefix: string): string {
 
   // If first line is too long, take first sentence or truncate
   const firstSentence = content.split(".")[0].trim();
-  if (firstSentence.length <= MAX_TITLE_LENGTH) {
-    return prefix + firstSentence;
-  }
 
   // Fallback: truncate to 50 chars
-  return (
-    prefix +
-    firstSentence.substring(0, MAX_TITLE_LENGTH - 3 - prefix.length) +
-    "..."
-  );
+  return prefix + firstSentence.substring(0, MAX_TITLE_LENGTH - prefix.length);
 }
